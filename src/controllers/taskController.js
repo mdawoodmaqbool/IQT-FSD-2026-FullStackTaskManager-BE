@@ -19,7 +19,7 @@ export async function listTasks(req, res, next) {
     const limit = req.query.limit ? Number(req.query.limit) : undefined;
     const offset = req.query.offset ? Number(req.query.offset) : undefined;
 
-    const tasks = await findTasks({ status, limit, offset });
+    const tasks = await findTasks(req.user.id, { status, limit, offset });
     res.json(tasks);
   } catch (error) {
     next(error);
@@ -33,7 +33,7 @@ export async function addTask(req, res, next) {
       return sendValidationError(res, errors);
     }
 
-    const task = await insertTask({
+    const task = await insertTask(req.user.id, {
       title: req.body.title,
       description: req.body.description,
     });
@@ -51,7 +51,7 @@ export async function editTask(req, res, next) {
       return sendValidationError(res, errors);
     }
 
-    const updated = await patchTask(req.params.id, req.body);
+    const updated = await patchTask(req.user.id, req.params.id, req.body);
     if (!updated) {
       return res.status(404).json({ message: "Task not found" });
     }
@@ -64,7 +64,7 @@ export async function editTask(req, res, next) {
 
 export async function removeTaskHandler(req, res, next) {
   try {
-    const deleted = await removeTask(req.params.id);
+    const deleted = await removeTask(req.user.id, req.params.id);
     if (!deleted) {
       return res.status(404).json({ message: "Task not found" });
     }

@@ -5,6 +5,28 @@ export const typeDefs = `#graphql
     completed
   }
 
+  enum OtpType {
+    signup
+    reset_password
+  }
+
+  type User {
+    id: ID!
+    email: String!
+    isVerified: Boolean!
+    createdAt: String!
+  }
+
+  type AuthPayload {
+    token: String!
+    user: User!
+  }
+
+  type MessageResponse {
+    message: String!
+    email: String
+  }
+
   type Task {
     id: ID!
     title: String!
@@ -22,12 +44,19 @@ export const typeDefs = `#graphql
   }
 
   type Query {
+    me: User!
     tasks(status: TaskStatus, limit: Int, offset: Int): [Task!]!
     task(id: ID!): Task
     taskCounts: TaskCounts!
   }
 
   type Mutation {
+    signup(email: String!, password: String!): MessageResponse!
+    verifyOtp(email: String!, code: String!): AuthPayload!
+    login(email: String!, password: String!): AuthPayload!
+    resendOtp(email: String!, type: OtpType): MessageResponse!
+    forgotPassword(email: String!): MessageResponse!
+    resetPassword(email: String!, code: String!, password: String!): MessageResponse!
     createTask(title: String!, description: String): Task!
     updateTask(
       id: ID!
