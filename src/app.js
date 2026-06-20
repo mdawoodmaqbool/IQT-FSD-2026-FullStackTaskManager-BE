@@ -9,6 +9,7 @@ import { typeDefs } from "./graphql/typeDefs.js";
 import { buildAuthContext } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import authRouter from "./routes/auth.js";
+import externalRouter from "./routes/external.js";
 import tasksRouter from "./routes/tasks.js";
 import { authenticate } from "./middleware/auth.js";
 
@@ -46,6 +47,7 @@ export async function createApp() {
   });
 
   app.use("/api/auth", authRouter);
+  app.use("/api/external", externalRouter);
 
   app.use(
     "/graphql",

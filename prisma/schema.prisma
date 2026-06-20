@@ -22,6 +22,8 @@ model User {
   id           String     @id @default(uuid())
   email        String     @unique @db.VarChar(255)
   passwordHash String     @map("password_hash")
+  countryCode  String     @map("country_code") @db.VarChar(2)
+  countryName  String     @map("country_name") @db.VarChar(100)
   isVerified   Boolean    @default(false) @map("is_verified")
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")

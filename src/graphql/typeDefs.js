@@ -13,8 +13,28 @@ export const typeDefs = `#graphql
   type User {
     id: ID!
     email: String!
+    countryCode: String!
+    countryName: String!
     isVerified: Boolean!
     createdAt: String!
+  }
+
+  type Country {
+    code: String!
+    name: String!
+    capital: String
+  }
+
+  type Weather {
+    countryCode: String!
+    countryName: String!
+    location: String!
+    temperatureC: Float!
+    humidity: Int!
+    windSpeedKmh: Float!
+    condition: String!
+    observedAt: String!
+    source: String!
   }
 
   type AuthPayload {
@@ -45,13 +65,15 @@ export const typeDefs = `#graphql
 
   type Query {
     me: User!
+    countries: [Country!]!
+    weather: Weather!
     tasks(status: TaskStatus, limit: Int, offset: Int): [Task!]!
     task(id: ID!): Task
     taskCounts: TaskCounts!
   }
 
   type Mutation {
-    signup(email: String!, password: String!): MessageResponse!
+    signup(email: String!, password: String!, countryCode: String!): MessageResponse!
     verifyOtp(email: String!, code: String!): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
     resendOtp(email: String!, type: OtpType): MessageResponse!

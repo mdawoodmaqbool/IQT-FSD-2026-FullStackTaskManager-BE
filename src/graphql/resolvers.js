@@ -15,11 +15,15 @@ import {
   patchTask,
   removeTask,
 } from "../repositories/taskRepository.js";
-import { requireAuth } from "../middleware/auth.js";
+import {
+  getCountries,
+  getWeatherByCountryCode,
+} from "../services/externalApiService.js";
 import {
   validateCreateTask,
   validateUpdateTask,
 } from "../utils/validation.js";
+import { requireAuth } from "../middleware/auth.js";
 
 function validationError(errors) {
   const error = new Error(errors.join(". "));
@@ -69,12 +73,29 @@ export const resolvers = {
 
       return { all, pending, in_progress, completed };
     },
+    countries: async () => getCountries(),
+    weather: async (_parent, _args, context) => {
+      requireAuth(context.user);
+
+      if (!context.user.countryCode) {
+        throw authServiceError({
+          message: "No country set on your profile",
+          status: 400,
+        });
+      }
+
+      try {
+        return await getWeatherByCountryCode(context.user.countryCode);
+      } catch (error) {
+        throw authServiceError(error);
+      }
+    },
   },
 
   Mutation: {
-    signup: async (_parent, { email, password }) => {
+    signup: async (_parent, { email, password, countryCode }) => {
       try {
-        return await signup({ email, password });
+        return await signup({ email, password, countryCode });
       } catch (error) {
         throw authServiceError(error);
       }

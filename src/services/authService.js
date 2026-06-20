@@ -15,6 +15,10 @@ import {
   validateOtp,
   validatePassword,
 } from "../utils/authValidation.js";
+import {
+  getCountries,
+  validateCountryCode,
+} from "./externalApiService.js";
 
 function authError(message, status = 400) {
   const error = new Error(message);
@@ -51,20 +55,28 @@ function toPublicUser(user) {
   return {
     id: user.id,
     email: user.email,
+    countryCode: user.countryCode,
+    countryName: user.countryName,
     isVerified: user.isVerified,
     createdAt: user.createdAt.toISOString(),
   };
 }
 
-export async function signup({ email, password }) {
+export async function signup({ email, password, countryCode }) {
   const emailError = validateEmail(email);
   const passwordError = validatePassword(password);
+  const countryError = await validateCountryCode(countryCode);
 
-  if (emailError || passwordError) {
-    throw authError([emailError, passwordError].filter(Boolean).join(". "));
+  if (emailError || passwordError || countryError) {
+    throw authError(
+      [emailError, passwordError, countryError].filter(Boolean).join(". "),
+    );
   }
 
   const normalizedEmail = normalizeEmail(email);
+  const countries = await getCountries();
+  const selectedCountry = countries.find((country) => country.code === countryCode);
+  const countryName = selectedCountry?.name ?? countryCode;
   const existing = await prisma.user.findUnique({
     where: { email: normalizedEmail },
   });
@@ -81,6 +93,8 @@ export async function signup({ email, password }) {
       data: {
         email: normalizedEmail,
         passwordHash,
+        countryCode,
+        countryName,
         isVerified: false,
       },
     }));
@@ -88,7 +102,7 @@ export async function signup({ email, password }) {
   if (existing) {
     await prisma.user.update({
       where: { id: existing.id },
-      data: { passwordHash },
+      data: { passwordHash, countryCode, countryName },
     });
   }
 
