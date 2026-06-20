@@ -1,10 +1,9 @@
 import {
-  createTask,
-  deleteTask,
-  getAllTasks,
-  getTaskById,
-  updateTask,
-} from "../store/taskStore.js";
+  findTasks,
+  insertTask,
+  patchTask,
+  removeTask,
+} from "../repositories/taskRepository.js";
 import {
   validateCreateTask,
   validateUpdateTask,
@@ -14,44 +13,64 @@ function sendValidationError(res, errors) {
   return res.status(400).json({ message: errors.join(". ") });
 }
 
-export function listTasks(_req, res) {
-  res.json(getAllTasks());
+export async function listTasks(req, res, next) {
+  try {
+    const status = req.query.status;
+    const limit = req.query.limit ? Number(req.query.limit) : undefined;
+    const offset = req.query.offset ? Number(req.query.offset) : undefined;
+
+    const tasks = await findTasks({ status, limit, offset });
+    res.json(tasks);
+  } catch (error) {
+    next(error);
+  }
 }
 
-export function addTask(req, res) {
-  const errors = validateCreateTask(req.body);
-  if (errors.length > 0) {
-    return sendValidationError(res, errors);
+export async function addTask(req, res, next) {
+  try {
+    const errors = validateCreateTask(req.body);
+    if (errors.length > 0) {
+      return sendValidationError(res, errors);
+    }
+
+    const task = await insertTask({
+      title: req.body.title,
+      description: req.body.description,
+    });
+
+    res.status(201).json(task);
+  } catch (error) {
+    next(error);
   }
-
-  const task = createTask({
-    title: req.body.title,
-    description: req.body.description,
-  });
-
-  res.status(201).json(task);
 }
 
-export function editTask(req, res) {
-  const task = getTaskById(req.params.id);
-  if (!task) {
-    return res.status(404).json({ message: "Task not found" });
-  }
+export async function editTask(req, res, next) {
+  try {
+    const errors = validateUpdateTask(req.body);
+    if (errors.length > 0) {
+      return sendValidationError(res, errors);
+    }
 
-  const errors = validateUpdateTask(req.body);
-  if (errors.length > 0) {
-    return sendValidationError(res, errors);
-  }
+    const updated = await patchTask(req.params.id, req.body);
+    if (!updated) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
-  const updated = updateTask(req.params.id, req.body);
-  res.json(updated);
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
 }
 
-export function removeTask(req, res) {
-  const deleted = deleteTask(req.params.id);
-  if (!deleted) {
-    return res.status(404).json({ message: "Task not found" });
-  }
+export async function removeTaskHandler(req, res, next) {
+  try {
+    const deleted = await removeTask(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
-  res.status(204).send();
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 }

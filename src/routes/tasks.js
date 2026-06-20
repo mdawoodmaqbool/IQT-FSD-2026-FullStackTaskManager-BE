@@ -3,7 +3,7 @@ import {
   addTask,
   editTask,
   listTasks,
-  removeTask,
+  removeTaskHandler,
 } from "../controllers/taskController.js";
 
 const router = Router();
@@ -11,6 +11,6 @@ const router = Router();
 router.get("/", listTasks);
 router.post("/", addTask);
 router.patch("/:id", editTask);
-router.delete("/:id", removeTask);
+router.delete("/:id", removeTaskHandler);
 
 export default router;
