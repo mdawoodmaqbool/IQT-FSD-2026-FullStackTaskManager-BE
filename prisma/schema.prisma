@@ -13,16 +13,53 @@ enum TaskStatus {
   completed
 }
 
+enum OtpType {
+  signup
+  reset_password
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique @db.VarChar(255)
+  passwordHash String     @map("password_hash")
+  isVerified   Boolean    @default(false) @map("is_verified")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  tasks        Task[]
+  otpTokens    OtpToken[]
+
+  @@map("users")
+}
+
+model OtpToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  codeHash  String    @map("code_hash")
+  type      OtpType
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@map("otp_tokens")
+}
+
 model Task {
   id          String     @id @default(uuid())
+  userId      String     @map("user_id")
   title       String     @db.VarChar(120)
   description String?    @db.VarChar(500)
   status      TaskStatus @default(pending)
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([status])
   @@index([createdAt(sort: Desc)])
-  @@index([status, createdAt(sort: Desc)])
+  @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("tasks")
 }

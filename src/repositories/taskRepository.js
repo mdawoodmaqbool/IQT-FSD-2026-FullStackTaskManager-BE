@@ -21,13 +21,16 @@ function normalizeLimit(limit) {
   return Math.min(Math.max(limit, 1), MAX_LIMIT);
 }
 
-function buildWhere(status) {
-  return status ? { status } : {};
+function buildWhere(userId, status) {
+  return {
+    userId,
+    ...(status ? { status } : {}),
+  };
 }
 
-export async function findTasks({ status, limit, offset = 0 } = {}) {
+export async function findTasks(userId, { status, limit, offset = 0 } = {}) {
   const tasks = await prisma.task.findMany({
-    where: buildWhere(status),
+    where: buildWhere(userId, status),
     select: TASK_SELECT,
     orderBy: { createdAt: "desc" },
     take: normalizeLimit(limit),
@@ -37,24 +40,25 @@ export async function findTasks({ status, limit, offset = 0 } = {}) {
   return tasks.map(toTaskResponse);
 }
 
-export async function findTaskById(id) {
-  const task = await prisma.task.findUnique({
-    where: { id },
+export async function findTaskById(userId, id) {
+  const task = await prisma.task.findFirst({
+    where: { id, userId },
     select: TASK_SELECT,
   });
 
   return task ? toTaskResponse(task) : null;
 }
 
-export async function countTasks(status) {
+export async function countTasks(userId, status) {
   return prisma.task.count({
-    where: buildWhere(status),
+    where: buildWhere(userId, status),
   });
 }
 
-export async function insertTask({ title, description }) {
+export async function insertTask(userId, { title, description }) {
   const task = await prisma.task.create({
     data: {
+      userId,
       title: title.trim(),
       description: description?.trim() ? description.trim() : null,
     },
@@ -64,7 +68,16 @@ export async function insertTask({ title, description }) {
   return toTaskResponse(task);
 }
 
-export async function patchTask(id, updates) {
+export async function patchTask(userId, id, updates) {
+  const existing = await prisma.task.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+
+  if (!existing) {
+    return null;
+  }
+
   const data = {};
 
   if (updates.title !== undefined) {
@@ -81,32 +94,19 @@ export async function patchTask(id, updates) {
     data.status = updates.status;
   }
 
-  try {
-    const task = await prisma.task.update({
-      where: { id },
-      data,
-      select: TASK_SELECT,
-    });
+  const task = await prisma.task.update({
+    where: { id },
+    data,
+    select: TASK_SELECT,
+  });
 
-    return toTaskResponse(task);
-  } catch (error) {
-    if (error.code === "P2025") {
-      return null;
-    }
-
-    throw error;
-  }
+  return toTaskResponse(task);
 }
 
-export async function removeTask(id) {
-  try {
-    await prisma.task.delete({ where: { id } });
-    return true;
-  } catch (error) {
-    if (error.code === "P2025") {
-      return false;
-    }
+export async function removeTask(userId, id) {
+  const result = await prisma.task.deleteMany({
+    where: { id, userId },
+  });
 
-    throw error;
-  }
+  return result.count > 0;
 }
