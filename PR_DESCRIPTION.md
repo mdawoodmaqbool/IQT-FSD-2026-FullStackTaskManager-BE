@@ -1,72 +1,77 @@
-# TaskManager API
+# Add PostgreSQL, GraphQL, and query optimizations
 
 ## Summary
 
-This PR adds the **TaskManager** Node.js backend for the full-stack coding assessment. It provides a REST API that the Next.js frontend uses for task CRUD operations.
+This PR replaces the in-memory task store with **PostgreSQL + Prisma**, adds a **GraphQL API** alongside REST, and applies basic query optimizations (indexes, field selection, pagination, parallel counts).
 
-The API includes input validation, CORS support for the frontend, and a clear project structure with separated routes, controllers, and storage.
+Both REST and GraphQL use a shared repository layer so CRUD logic is not duplicated.
 
 ## Changes
 
-### API server
-- **Express app** with JSON parsing, CORS, and centralized error handling
-- **Health check** at `GET /health`
-- **Task CRUD** at `/api/tasks` matching the frontend contract
+### Database
+- Designed `Task` schema with status enum, length constraints, and timestamps
+- Added indexes on `status`, `createdAt`, and composite `(status, createdAt)`
+- Added Prisma migration and `docker-compose.yml` for local PostgreSQL
 
-### Routes and controllers
-- **routes/tasks.js** — maps HTTP methods to controller handlers
-- **taskController.js** — validates input, calls the store, and returns JSON responses
+### Data layer
+- **taskRepository.js** — optimized Prisma queries with `select`, filters, and pagination
+- **prisma.js** — singleton client to avoid connection pool issues in dev
+- Removed in-memory `taskStore.js`
 
-### Data and validation
-- **taskStore.js** — in-memory task storage with UUID ids and timestamps
-- **validation.js** — checks title, description, and status on create/update
+### GraphQL
+- Apollo Server at `/graphql`
+- Queries: `tasks`, `task`, `taskCounts`
+- Mutations: `createTask`, `updateTask`, `deleteTask`
 
-### Project setup
-- Added `.env.example` for `PORT`, `CORS_ORIGIN`, and `NODE_ENV`
-- Added `.gitignore` to exclude `.env` and `node_modules`
-- Added `INITIAL_SETUP.README` with setup steps, API docs, and file overview
+### REST (updated)
+- All CRUD endpoints now use PostgreSQL
+- `GET /api/tasks` supports `status`, `limit`, and `offset` query params
 
-## API contract
+### Config
+- Added `DATABASE_URL` to `.env.example`
+- Added npm scripts: `db:up`, `db:down`, `prisma:migrate`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/api/tasks` | Fetch all tasks |
-| POST | `/api/tasks` | Create a task |
-| PATCH | `/api/tasks/:id` | Update a task |
-| DELETE | `/api/tasks/:id` | Delete a task |
+## Schema
 
-Task statuses: `pending`, `in_progress`, `completed`.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID string | Primary key |
+| title | VARCHAR(120) | Required |
+| description | VARCHAR(500) | Optional |
+| status | enum | pending, in_progress, completed |
+| created_at | timestamp | Auto-set |
+| updated_at | timestamp | Auto-updated |
 
-Error responses:
+## Optimizations
 
-```json
-{ "message": "Error details" }
+- Indexed filter and sort columns
+- `select` only required fields in list queries
+- Pagination with default limit 100 (max 200)
+- Parallel `countTasks` calls for filter badge counts
+- Shared repository for REST + GraphQL
+
+## Setup
+
+```bash
+cp .env.example .env
+npm install
+npm run db:up
+npm run prisma:migrate
+npm run dev
 ```
-
-## Environment variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | API port | `5000` |
-| `CORS_ORIGIN` | Frontend origin | `http://localhost:3000` |
-| `NODE_ENV` | Runtime environment | `development` |
 
 ## Test plan
 
-- [ ] Copy `.env.example` to `.env`
-- [ ] Run `npm install` and `npm run dev`
-- [ ] Confirm `GET http://localhost:5000/health` returns `{ "status": "ok" }`
-- [ ] Create a task with `POST /api/tasks`
-- [ ] List tasks with `GET /api/tasks`
-- [ ] Update a task with `PATCH /api/tasks/:id`
-- [ ] Delete a task with `DELETE /api/tasks/:id`
-- [ ] Send invalid data and confirm `400` with a `message` field
-- [ ] Request a missing task id and confirm `404`
-- [ ] Start the frontend and verify full CRUD from the UI
+- [ ] Start PostgreSQL with `npm run db:up`
+- [ ] Run migrations with `npm run prisma:migrate`
+- [ ] Confirm `GET /health` returns ok
+- [ ] Create, list, update, and delete tasks via REST
+- [ ] Run the same CRUD flow via GraphQL at `/graphql`
+- [ ] Verify `taskCounts` returns correct totals
+- [ ] Filter tasks by status on REST and GraphQL
+- [ ] Restart server and confirm tasks persist
 
 ## Notes
 
-- Tasks are stored in memory and reset when the server restarts
-- CORS is limited to the origin set in `CORS_ORIGIN`
-- See `INITIAL_SETUP.README` for full project structure and setup instructions
+- See local `DB_Connect_Features.md` for a full learning guide (not committed)
+- REST kept for simple API testing; frontend uses GraphQL
