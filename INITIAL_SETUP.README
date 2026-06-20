@@ -1,0 +1,163 @@
+# TaskManager API — Initial Setup
+
+Node.js REST API for the TaskManager full-stack project. It exposes task CRUD endpoints used by the Next.js frontend.
+
+## Prerequisites
+
+- Node.js 18 or later
+- npm
+
+## Initial Setup
+
+1. Go to the project folder:
+
+```bash
+cd task-manager-be
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Copy the environment file:
+
+```bash
+cp .env.example .env
+```
+
+Update `PORT` or `CORS_ORIGIN` in `.env` if needed. The frontend defaults to `http://localhost:5000`.
+
+4. Start the server:
+
+```bash
+npm run dev
+```
+
+5. Confirm the API is running:
+
+```bash
+curl http://localhost:5000/health
+```
+
+Expected response:
+
+```json
+{ "status": "ok" }
+```
+
+## Available Scripts
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start the server with file watching |
+| `npm start` | Start the server |
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Port the API listens on | `5000` |
+| `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:3000` |
+| `NODE_ENV` | Runtime environment | `development` |
+
+`.env` is ignored by git. Use `.env.example` as a template for local setup.
+
+## API Endpoints
+
+| Method | Endpoint | Body | Description |
+|--------|----------|------|-------------|
+| GET | `/health` | — | Health check |
+| GET | `/api/tasks` | — | Fetch all tasks |
+| POST | `/api/tasks` | `{ title, description? }` | Create a task |
+| PATCH | `/api/tasks/:id` | `{ title?, description?, status? }` | Update a task |
+| DELETE | `/api/tasks/:id` | — | Delete a task |
+
+Task object shape:
+
+```json
+{
+  "id": "string",
+  "title": "string",
+  "description": "string | null",
+  "status": "pending | in_progress | completed",
+  "createdAt": "ISO date string",
+  "updatedAt": "ISO date string"
+}
+```
+
+Validation rules:
+
+- `title` is required on create (max 120 characters)
+- `description` is optional (max 500 characters)
+- `status` must be `pending`, `in_progress`, or `completed`
+
+Error responses use this format:
+
+```json
+{ "message": "Error details" }
+```
+
+## Project Structure
+
+```
+task-manager-be/
+├── .env.example          # Sample environment variables (safe to commit)
+├── .gitignore            # Files excluded from version control
+├── INITIAL_SETUP.README  # This file — setup and project overview
+├── package.json          # Dependencies and npm scripts
+└── src/
+    ├── index.js          # Server entry point — starts listening on PORT
+    ├── app.js            # Express app setup, middleware, and routes
+    ├── config.js         # Reads environment variables
+    ├── controllers/
+    │   └── taskController.js  # Request handlers for task CRUD
+    ├── middleware/
+    │   └── errorHandler.js    # 404 and global error handlers
+    ├── routes/
+    │   └── tasks.js           # Task route definitions
+    ├── store/
+    │   └── taskStore.js       # In-memory task storage
+    └── utils/
+        └── validation.js      # Input validation for create/update
+```
+
+## What Each Part Does
+
+### Entry and config
+
+- **index.js** — Boots the Express app and listens on the configured port.
+- **app.js** — Configures CORS, JSON parsing, routes, and error handling.
+- **config.js** — Central place for port, CORS origin, and environment settings.
+
+### Routes and controllers
+
+- **routes/tasks.js** — Maps HTTP methods and paths to controller functions.
+- **taskController.js** — Validates input, calls the store, and sends responses.
+
+### Data and validation
+
+- **taskStore.js** — In-memory storage for tasks during development.
+- **validation.js** — Checks request bodies before create and update operations.
+
+### Middleware
+
+- **errorHandler.js** — Returns consistent JSON errors for unknown routes and server failures.
+
+## Connect to the frontend
+
+1. Start this API on port `5000`.
+2. In the frontend project, set:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:5000
+```
+
+3. Start the frontend with `npm run dev` and open `http://localhost:3000`.
+
+## Notes
+
+- Tasks are stored in memory and reset when the server restarts.
+- CORS is limited to the origin set in `CORS_ORIGIN`.
+- The API matches the contract expected by the TaskManager frontend.
