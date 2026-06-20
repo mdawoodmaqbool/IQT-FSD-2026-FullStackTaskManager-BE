@@ -18,3 +18,7 @@ npm-debug.log*
 
 # runtime
 coverage/
+
+# local docs (kept on disk, not committed)
+README.md
+INITIAL_SETUP.README
