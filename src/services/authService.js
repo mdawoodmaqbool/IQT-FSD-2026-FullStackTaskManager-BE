@@ -98,33 +98,6 @@ export async function login({ email, password }) {
   };
 }
 
-export async function resetPassword({ email, password }) {
-  const emailError = validateEmail(email);
-  const passwordError = validatePassword(password);
-
-  if (emailError || passwordError) {
-    throw authError([emailError, passwordError].filter(Boolean).join(". "));
-  }
-
-  const normalizedEmail = normalizeEmail(email);
-  const user = await prisma.user.findUnique({
-    where: { email: normalizedEmail },
-  });
-
-  if (!user) {
-    throw authError("Invalid reset request", 400);
-  }
-
-  const passwordHash = await hashPassword(password);
-
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { passwordHash },
-  });
-
-  return { message: "Password updated successfully" };
-}
-
 export async function getUserById(userId) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   return user ? toPublicUser(user) : null;

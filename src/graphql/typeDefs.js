@@ -37,11 +37,6 @@ export const typeDefs = `#graphql
     user: User!
   }
 
-  type MessageResponse {
-    message: String!
-    email: String
-  }
-
   type Task {
     id: ID!
     title: String!
@@ -70,7 +65,6 @@ export const typeDefs = `#graphql
   type Mutation {
     signup(email: String!, password: String!, countryCode: String!): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
-    resetPassword(email: String!, password: String!): MessageResponse!
     createTask(title: String!, description: String): Task!
     updateTask(
       id: ID!

@@ -6,7 +6,6 @@ import {
 import {
   getUserById,
   login,
-  resetPassword,
   signup,
 } from "../services/authService.js";
 import {
@@ -102,13 +101,6 @@ export const resolvers = {
     login: async (_parent, { email, password }) => {
       try {
         return await login({ email, password });
-      } catch (error) {
-        throw toGraphQLError(error);
-      }
-    },
-    resetPassword: async (_parent, { email, password }) => {
-      try {
-        return await resetPassword({ email, password });
       } catch (error) {
         throw toGraphQLError(error);
       }
