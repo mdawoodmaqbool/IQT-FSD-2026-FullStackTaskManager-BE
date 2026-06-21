@@ -1,7 +1,8 @@
 import { config } from "../config.js";
 
-const COUNTRIES_URL =
-  "https://restcountries.com/v3.1/all?fields=name,cca2,capital,capitalInfo";
+const COUNTRIES_V5_URL = "https://api.restcountries.com/countries/v5";
+const COUNTRIES_FALLBACK_URL =
+  "https://raw.githubusercontent.com/mledoze/countries/master/countries.json";
 const OPEN_METEO_GEO_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const OPEN_METEO_WEATHER_URL = "https://api.open-meteo.com/v1/forecast";
 
@@ -46,18 +47,88 @@ async function fetchWithTimeout(url, options = {}) {
   }
 }
 
+function normalizeCapital(capital) {
+  if (Array.isArray(capital)) {
+    const value = capital[0];
+    return typeof value === "string" && value.trim() ? value.trim() : null;
+  }
+
+  return typeof capital === "string" && capital.trim() ? capital.trim() : null;
+}
+
 function mapCountry(entry) {
-  const latlng = entry.capitalInfo?.latlng;
+  const latlng = entry.capitalInfo?.latlng ?? entry.latlng;
   const latitude = Array.isArray(latlng) ? latlng[0] : null;
   const longitude = Array.isArray(latlng) ? latlng[1] : null;
 
   return {
-    code: entry.cca2,
-    name: entry.name?.common ?? entry.cca2,
-    capital: entry.capital?.[0] ?? null,
+    code: entry.cca2 ?? entry.codes?.alpha_2,
+    name: entry.name?.common ?? entry.names?.common ?? entry.cca2,
+    capital: normalizeCapital(entry.capital),
     latitude,
     longitude,
   };
+}
+
+function mapV5Country(entry) {
+  const latlng = entry.capitalInfo?.latlng ?? entry.latlng;
+
+  return {
+    code: entry.codes?.alpha_2,
+    name: entry.names?.common ?? entry.codes?.alpha_2,
+    capital: normalizeCapital(entry.capital),
+    latitude: Array.isArray(latlng) ? latlng[0] : null,
+    longitude: Array.isArray(latlng) ? latlng[1] : null,
+  };
+}
+
+async function loadCountriesFromV5(apiKey) {
+  const countries = [];
+  const limit = 100;
+  let offset = 0;
+
+  while (true) {
+    const url = new URL(COUNTRIES_V5_URL);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+    url.searchParams.set(
+      "response_fields",
+      "names.common,codes.alpha_2,capital,capitalInfo,latlng",
+    );
+
+    const page = await fetchWithTimeout(url.toString(), {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    const objects = page?.data?.objects ?? [];
+    countries.push(...objects.map(mapV5Country));
+
+    if (objects.length < limit) {
+      break;
+    }
+
+    offset += limit;
+  }
+
+  return countries;
+}
+
+async function loadCountriesFromFallback() {
+  const raw = await fetchWithTimeout(COUNTRIES_FALLBACK_URL);
+
+  if (!Array.isArray(raw)) {
+    throw externalError("Country data format is invalid", 502);
+  }
+
+  return raw.map(mapCountry);
+}
+
+async function fetchCountryRecords() {
+  if (config.restCountriesApiKey) {
+    return loadCountriesFromV5(config.restCountriesApiKey);
+  }
+
+  return loadCountriesFromFallback();
 }
 
 async function loadCountries() {
@@ -65,9 +136,8 @@ async function loadCountries() {
     return countriesCache;
   }
 
-  const raw = await fetchWithTimeout(COUNTRIES_URL);
-  const countries = raw
-    .map(mapCountry)
+  const records = await fetchCountryRecords();
+  const countries = records
     .filter((country) => country.code && country.name)
     .sort((a, b) => a.name.localeCompare(b.name));
 
