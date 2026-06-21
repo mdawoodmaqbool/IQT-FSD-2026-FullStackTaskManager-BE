@@ -12,6 +12,9 @@
     "db:down": "docker compose down",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "db:test-aurora": "node scripts/test-aurora-iam.js",
+    "db:create-app-db": "node scripts/create-taskmanager-db-password.js",
     "postinstall": "prisma generate"
   },
   "engines": {
@@ -31,6 +34,8 @@
     "nodemailer": "^6.10.0"
   },
   "devDependencies": {
+    "@aws-sdk/rds-signer": "^3.758.0",
+    "pg": "^8.14.1",
     "prisma": "^6.5.0"
   }
 }

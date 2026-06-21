@@ -5,11 +5,6 @@ export const typeDefs = `#graphql
     completed
   }
 
-  enum OtpType {
-    signup
-    reset_password
-  }
-
   type User {
     id: ID!
     email: String!
@@ -73,12 +68,9 @@ export const typeDefs = `#graphql
   }
 
   type Mutation {
-    signup(email: String!, password: String!, countryCode: String!): MessageResponse!
-    verifyOtp(email: String!, code: String!): AuthPayload!
+    signup(email: String!, password: String!, countryCode: String!): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
-    resendOtp(email: String!, type: OtpType): MessageResponse!
-    forgotPassword(email: String!): MessageResponse!
-    resetPassword(email: String!, code: String!, password: String!): MessageResponse!
+    resetPassword(email: String!, password: String!): MessageResponse!
     createTask(title: String!, description: String): Task!
     updateTask(
       id: ID!

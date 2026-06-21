@@ -28,4 +28,5 @@ export const config = {
     pass: process.env.SMTP_PASS || "",
     from: process.env.SMTP_FROM || "TaskManager <noreply@taskmanager.local>",
   },
+  restCountriesApiKey: process.env.REST_COUNTRIES_API_KEY || "",
 };

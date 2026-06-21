@@ -13,7 +13,7 @@ export async function authenticate(req, res, next) {
     const payload = verifyToken(token);
     const user = await getUserById(payload.sub);
 
-    if (!user?.isVerified) {
+    if (!user) {
       return res.status(401).json({ message: "Authentication required" });
     }
 
@@ -36,7 +36,7 @@ export async function buildAuthContext(req) {
     const payload = verifyToken(token);
     const user = await getUserById(payload.sub);
 
-    if (!user?.isVerified) {
+    if (!user) {
       return { user: null };
     }
 
@@ -48,7 +48,7 @@ export async function buildAuthContext(req) {
 
 export function requireAuth(user) {
   if (!user) {
-    const error = new Error("Authentication required");
+    const error = new Error("Please sign in to continue.");
     error.extensions = { code: "UNAUTHENTICATED", status: 401 };
     throw error;
   }

@@ -33,9 +33,16 @@ export async function createApp() {
     resolvers,
     formatError(formattedError, error) {
       const status = error.extensions?.status ?? 500;
+      const code = formattedError.extensions?.code ?? "INTERNAL_SERVER_ERROR";
+      const message =
+        formattedError.message &&
+        !formattedError.message.includes("Cannot read properties of undefined")
+          ? formattedError.message
+          : "Something went wrong. Please try again.";
+
       return {
-        message: formattedError.message,
-        extensions: { code: formattedError.extensions?.code, status },
+        message,
+        extensions: { code, status },
       };
     },
   });

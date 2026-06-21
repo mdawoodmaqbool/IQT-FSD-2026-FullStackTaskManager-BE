@@ -18,6 +18,8 @@ npm-debug.log*
 
 # runtime
 coverage/
+prisma/**/*.db
+prisma/**/*.db-journal
 
 # local docs (kept on disk, not committed)
 README.md
